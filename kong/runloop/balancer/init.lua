@@ -45,6 +45,41 @@ if ngx.config.subsystem ~= "stream" then
 end
 
 
+local get_query_arg
+do
+  local get_uri_args = ngx.req.get_uri_args
+  local limit = 100
+  local cache
+
+  -- OpenResty added the ability to reuse the result table in 0.10.21
+  --
+  -- The table is cleared by ngx.req.get_uri_args, so there is no need for the
+  -- caller to clear or reset it manually
+  --
+  -- @see https://github.com/openresty/lua-resty-core/pull/288
+  if ngx.config.ngx_lua_version >= 10021 then
+    cache = require("table.new")(0, limit)
+  end
+
+  function get_query_arg(name)
+    local query, err = get_uri_args(limit, cache)
+
+    if err == "truncated" then
+      log(WARN, "could not fetch all query string args for request, ",
+                "hash value may be empty/incomplete")
+    elseif err then
+      log(ERR, "failed fetching query string args: ", err)
+    end
+
+    local value = query[name]
+    if type(value) == "table" then
+      value = table_concat(value, ",")
+    end
+
+    return value
+  end
+end
+
 -- Calculates hash-value.
 -- Will only be called once per request, on first try.
 -- @param upstream the upstream entity
@@ -57,6 +92,7 @@ local function get_value_to_hash(upstream, ctx)
 
   local identifier
   local header_field_name = "hash_on_header"
+  local query_arg_field_name = "hash_on_query_arg"
 
   for _ = 1,2 do
 
@@ -97,6 +133,18 @@ local function get_value_to_hash(upstream, ctx)
         }
       end
 
+    elseif hash_on == "path" then
+      -- for the sake of simplicity, we're using the NGINX-normalized version of
+      -- the path here instead of running ngx.var.request_uri through our
+      -- internal normalization mechanism
+      identifier = var.uri
+
+    elseif hash_on == "query_arg" then
+      local arg_name = upstream[query_arg_field_name]
+      identifier = get_query_arg(arg_name)
+
+    else
+      log(ERR, "unknown hash_on value: ", hash_on)
     end
 
     if identifier then
@@ -106,6 +154,7 @@ local function get_value_to_hash(upstream, ctx)
     -- we missed the first, so now try the fallback
     hash_on = upstream.hash_fallback
     header_field_name = "hash_fallback_header"
+    query_arg_field_name = "hash_fallback_query_arg"
     if hash_on == "none" then
       return nil
     end

@@ -102,7 +102,7 @@ local function put_target_endpoint(upstream_id, host, port, endpoint)
 end
 
 
-local function client_requests(n, host_or_headers, proxy_host, proxy_port, protocol)
+local function client_requests(n, host_or_headers, proxy_host, proxy_port, protocol, uri)
   local oks, fails = 0, 0
   local last_status
   for _ = 1, n do
@@ -124,7 +124,7 @@ local function client_requests(n, host_or_headers, proxy_host, proxy_port, proto
 
     local res = client:send {
       method = "GET",
-      path = "/",
+      path = uri or "/",
       headers = type(host_or_headers) == "string"
                 and { ["Host"] = host_or_headers }
                 or host_or_headers
@@ -343,6 +343,25 @@ do
       hosts = rproto ~= "tcp" and { route_host } or nil,
       destinations = (rproto == "tcp") and {{ port = 9100 }} or nil,
     })
+
+    bp.plugins:insert({
+      name = "post-function",
+      service = { id = service_id },
+      config = {
+        header_filter = {[[
+          local value = ngx.ctx and
+                        ngx.ctx.balancer_data and
+                        ngx.ctx.balancer_data.hash_value
+          if value == "" or value == nil then
+            value = "NONE"
+          end
+
+          ngx.header["x-balancer-hash-value"] = value
+          ngx.header["x-uri"] = ngx.var.request_uri
+        ]]},
+      },
+    })
+
     return route_host, service_id, route_id
   end
 

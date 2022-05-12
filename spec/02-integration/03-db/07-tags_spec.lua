@@ -449,7 +449,7 @@ for _, strategy in helpers.each_strategy() do
     func("trigger defined for table", function()
       for entity_name, dao in pairs(db.daos) do
         if dao.schema.fields.tags then
-          it(entity_name, function()
+          pending(entity_name, function()
             local res, err = db.connector:query(string.format([[
               SELECT event_manipulation
                 FROM information_schema.triggers

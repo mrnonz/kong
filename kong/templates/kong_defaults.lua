@@ -50,14 +50,12 @@ status_ssl_cert_key = NONE
 headers = server_tokens, latency_tokens
 trusted_ips = NONE
 error_default_type = text/plain
-upstream_keepalive = NONE
 upstream_keepalive_pool_size = 60
 upstream_keepalive_max_requests = 100
 upstream_keepalive_idle_timeout = 60
 
 nginx_user = kong kong
 nginx_worker_processes = auto
-nginx_optimizations = on
 nginx_daemon = on
 nginx_main_daemon = on
 nginx_main_user = kong kong
@@ -81,15 +79,8 @@ nginx_proxy_real_ip_header = X-Real-IP
 nginx_proxy_real_ip_recursive = off
 nginx_admin_client_max_body_size = 10m
 nginx_admin_client_body_buffer_size = 10m
-nginx_upstream_keepalive = NONE
-nginx_upstream_keepalive_requests = NONE
-nginx_upstream_keepalive_timeout = NONE
-nginx_http_upstream_keepalive = NONE
-nginx_http_upstream_keepalive_requests = NONE
-nginx_http_upstream_keepalive_timeout = NONE
 nginx_http_lua_regex_match_limit = 100000
 
-client_max_body_size = 0
 client_body_buffer_size = 8k
 real_ip_header = X-Real-IP
 real_ip_recursive = off
@@ -128,7 +119,6 @@ cassandra_ssl = off
 cassandra_ssl_verify = off
 cassandra_username = kong
 cassandra_password = NONE
-cassandra_consistency = NONE
 cassandra_write_consistency = ONE
 cassandra_read_consistency = ONE
 cassandra_lb_policy = RequestRoundRobin
@@ -159,7 +149,7 @@ dns_not_found_ttl = 30
 dns_error_ttl = 1
 dns_no_sync = off
 
-worker_consistency = strict
+worker_consistency = eventual
 worker_state_update_frequency = 5
 
 lua_socket_pool_size = 30

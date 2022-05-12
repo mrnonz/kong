@@ -176,16 +176,7 @@ local DYNAMIC_KEY_NAMESPACES = {
 }
 
 
-local DEPRECATED_DYNAMIC_KEY_NAMESPACES = {
-  {
-    injected_conf_name = "nginx_upstream_directives",
-    previous_conf_name = "nginx_http_upstream_directives",
-  },
-  {
-    injected_conf_name = "nginx_status_directives",
-    previous_conf_name = "nginx_http_status_directives",
-  },
-}
+local DEPRECATED_DYNAMIC_KEY_NAMESPACES = {}
 
 
 local PREFIX_PATHS = {
@@ -229,67 +220,6 @@ local function is_predefined_dhgroup(group)
     type = "DH",
     group = group,
   })
-end
-
-
-local function upstream_keepalive_deprecated_properties(conf)
-  -- nginx_http_upstream_keepalive -> nginx_upstream_keepalive
-  if conf.nginx_upstream_keepalive == nil then
-    if conf.nginx_http_upstream_keepalive ~= nil then
-      conf.nginx_upstream_keepalive = conf.nginx_http_upstream_keepalive
-    end
-  end
-
-  -- upstream_keepalive -> nginx_upstream_keepalive + nginx_http_upstream_keepalive
-  if conf.nginx_upstream_keepalive == nil then
-    if conf.upstream_keepalive ~= nil then
-      if conf.upstream_keepalive == 0 then
-        conf.nginx_upstream_keepalive = "NONE"
-        conf.nginx_http_upstream_keepalive = "NONE"
-
-      else
-        conf.nginx_upstream_keepalive = tostring(conf.upstream_keepalive)
-        conf.nginx_http_upstream_keepalive = tostring(conf.upstream_keepalive)
-      end
-    end
-  end
-
-  -- nginx_upstream_keepalive -> upstream_keepalive_pool_size
-  if conf.upstream_keepalive_pool_size == nil then
-    if conf.nginx_upstream_keepalive ~= nil then
-      if conf.nginx_upstream_keepalive == "NONE" then
-        conf.upstream_keepalive_pool_size = 0
-
-      else
-        conf.upstream_keepalive_pool_size = tonumber(conf.nginx_upstream_keepalive)
-      end
-    end
-  end
-
-  -- nginx_http_upstream_keepalive_requests -> nginx_upstream_keepalive_requests
-  if conf.nginx_upstream_keepalive_requests == nil then
-    conf.nginx_upstream_keepalive_requests = conf.nginx_http_upstream_keepalive_requests
-  end
-
-  -- nginx_upstream_keepalive_requests -> upstream_keepalive_max_requests
-  if conf.upstream_keepalive_max_requests == nil
-     and conf.nginx_upstream_keepalive_requests ~= nil
-  then
-    conf.upstream_keepalive_max_requests = tonumber(conf.nginx_upstream_keepalive_requests)
-  end
-
-  -- nginx_http_upstream_keepalive_timeout -> nginx_upstream_keepalive_timeout
-  if conf.nginx_upstream_keepalive_timeout == nil then
-    conf.nginx_upstream_keepalive_timeout = conf.nginx_http_upstream_keepalive_timeout
-  end
-  --
-  -- nginx_upstream_keepalive_timeout -> upstream_keepalive_idle_timeout
-  if conf.upstream_keepalive_idle_timeout == nil
-     and conf.nginx_upstream_keepalive_timeout ~= nil
-  then
-    conf.upstream_keepalive_idle_timeout =
-      utils.nginx_conf_time_to_seconds(conf.nginx_upstream_keepalive_timeout)
-  end
 end
 
 
@@ -343,61 +273,6 @@ local CONF_INFERENCES = {
     },
   },
 
-  -- TODO: remove since deprecated in 1.3
-  upstream_keepalive = {
-    typ = "number",
-    deprecated = {
-      replacement = "upstream_keepalive_pool_size",
-      alias = upstream_keepalive_deprecated_properties,
-    }
-  },
-
-  -- TODO: remove since deprecated in 2.0
-  nginx_http_upstream_keepalive = {
-    typ = "string",
-    deprecated = {
-      replacement = "upstream_keepalive_pool_size",
-      alias = upstream_keepalive_deprecated_properties,
-    }
-  },
-  nginx_http_upstream_keepalive_requests = {
-    typ = "string",
-    deprecated = {
-      replacement = "upstream_keepalive_max_requests",
-      alias = upstream_keepalive_deprecated_properties,
-    }
-  },
-  nginx_http_upstream_keepalive_timeout = {
-    typ = "string",
-    deprecated = {
-      replacement = "upstream_keepalive_idle_timeout",
-      alias = upstream_keepalive_deprecated_properties,
-    }
-  },
-
-  -- TODO: remove since deprecated in 2.1
-  nginx_upstream_keepalive = {
-    typ = "string",
-    deprecated = {
-      replacement = "upstream_keepalive_pool_size",
-      alias = upstream_keepalive_deprecated_properties,
-    }
-  },
-  nginx_upstream_keepalive_requests = {
-    typ = "string",
-    deprecated = {
-      replacement = "upstream_keepalive_max_requests",
-      alias = upstream_keepalive_deprecated_properties,
-    }
-  },
-  nginx_upstream_keepalive_timeout = {
-    typ = "string",
-    deprecated = {
-      replacement = "upstream_keepalive_idle_timeout",
-      alias = upstream_keepalive_deprecated_properties,
-    }
-  },
-
   upstream_keepalive_pool_size = { typ = "number" },
   upstream_keepalive_max_requests = { typ = "number" },
   upstream_keepalive_idle_timeout = { typ = "number" },
@@ -414,28 +289,6 @@ local CONF_INFERENCES = {
     typ = "ngx_boolean",
     alias = {
       replacement = "nginx_proxy_real_ip_recursive",
-    }
-  },
-  client_max_body_size = {
-    typ = "string",
-    deprecated = {
-      replacement = "nginx_http_client_max_body_size",
-      alias = function(conf)
-        if conf.nginx_http_client_max_body_size == nil then
-          conf.nginx_http_client_max_body_size = conf.client_max_body_size
-        end
-      end,
-    }
-  },
-  client_body_buffer_size = {
-    typ = "string",
-    deprecated = {
-      replacement = "nginx_http_client_body_buffer_size",
-      alias = function(conf)
-        if conf.nginx_http_client_body_buffer_size == nil then
-          conf.nginx_http_client_body_buffer_size = conf.client_body_buffer_size
-        end
-      end,
     }
   },
   error_default_type = { enum = {
@@ -491,21 +344,6 @@ local CONF_INFERENCES = {
                                   "LOCAL_ONE",
                                 }
                               },
-  cassandra_consistency = {
-    typ = "string",
-    deprecated = {
-      replacement = "cassandra_write_consistency / cassandra_read_consistency",
-      alias = function(conf)
-        if conf.cassandra_write_consistency == nil then
-          conf.cassandra_write_consistency = conf.cassandra_consistency
-        end
-
-        if conf.cassandra_read_consistency == nil then
-          conf.cassandra_read_consistency = conf.cassandra_consistency
-        end
-      end,
-    }
-  },
   cassandra_lb_policy = { enum = {
                             "RoundRobin",
                             "RequestRoundRobin",
@@ -533,7 +371,9 @@ local CONF_INFERENCES = {
   dns_not_found_ttl = { typ = "number" },
   dns_error_ttl = { typ = "number" },
   dns_no_sync = { typ = "boolean" },
-  worker_consistency = { enum = { "strict", "eventual" } },
+  worker_consistency = { enum = { "strict", "eventual" },
+    -- deprecating values for enums
+    deprecated = { value = "strict" }},
   router_consistency = {
     enum = { "strict", "eventual" },
     deprecated = {
@@ -547,18 +387,6 @@ local CONF_INFERENCES = {
     }
   },
   worker_state_update_frequency = { typ = "number" },
-  router_update_frequency = {
-    typ = "number",
-    deprecated = {
-      replacement = "worker_state_update_frequency",
-      alias = function(conf)
-        if conf.worker_state_update_frequency == nil and
-           conf.router_update_frequency ~= nil then
-          conf.worker_state_update_frequency = conf.router_update_frequency
-        end
-      end,
-    }
-  },
 
   ssl_protocols = {
     typ = "string",
@@ -619,10 +447,6 @@ local CONF_INFERENCES = {
               },
   plugins = { typ = "array" },
   anonymous_reports = { typ = "boolean" },
-  nginx_optimizations = {
-    typ = "boolean",
-    deprecated = { replacement = false }
-  },
 
   lua_ssl_trusted_certificate = { typ = "array" },
   lua_ssl_verify_depth = { typ = "number" },
@@ -1227,6 +1051,9 @@ local function deprecated_properties(conf, opts)
 
     if deprecated and conf[property_name] ~= nil then
       if not opts.from_kong_env then
+        if deprecated.value then
+            log.warn("the configuration value '%s' is deprecated for config option '%s' ", deprecated.value, property_name)
+        end
         if deprecated.replacement then
           log.warn("the '%s' configuration property is deprecated, use " ..
                      "'%s' instead", property_name, deprecated.replacement)

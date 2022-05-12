@@ -1294,9 +1294,9 @@
 
 #dns_cache_size = 10000          # Defines the maximum allowed number of
                                  # DNS records stored in memory cache.
-                                 # Least recently used DNS records are discarded 
-                                 # from cache if it is full. Both errors and 
-                                 # data are cached, therefore a single name query 
+                                 # Least recently used DNS records are discarded
+                                 # from cache if it is full. Both errors and
+                                 # data are cached, therefore a single name query
                                  # can easily take up 10-15 slots.
 
 #dns_not_found_ttl = 30          # TTL in seconds for empty DNS responses and
@@ -1314,7 +1314,7 @@
 # TUNING & BEHAVIOR
 #------------------------------------------------------------------------------
 
-#worker_consistency = strict
+#worker_consistency = eventual
                                  # Defines whether this node should rebuild its
                                  # state synchronously or asynchronously (the
                                  # balancers and the router are rebuilt on
@@ -1328,6 +1328,8 @@
                                  # - `strict`: the router will be rebuilt
                                  #   synchronously, causing incoming requests to
                                  #   be delayed until the rebuild is finished.
+                                 #   (This option is deprecated and will be
+                                 #    in future releases removed)
                                  # - `eventual`: the router will be rebuilt
                                  #   asynchronously via a recurring background
                                  #   job running every second inside of each

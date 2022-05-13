@@ -266,6 +266,14 @@ for _, strategy in helpers.each_strategy() do
                           "/root/.subdir/()",
                           { hash_on = "path" })
           end)
+
+          it("as a fallback", function()
+            test_with_uri("/my-path?a=1&b=2", "/my-path", {
+              hash_on = "header",
+              hash_on_header = "my-nonexistent-header",
+              hash_fallback = "path",
+            })
+          end)
         end)
 
         describe("hashing on #uri_capture", function()

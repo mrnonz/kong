@@ -109,6 +109,24 @@ In this release we continued our work on better performance:
 - Old `BasePlugin` is deprecated and will be removed in a future version of Kong.
   Porting tips in the [documentation](https://docs.konghq.com/gateway-oss/2.3.x/plugin-development/custom-logic/#porting-from-old-baseplugin-style)
 
+### Configuration
+
+- Removed the following config options as they have been deprecated in previous releases.
+  - upstream_keepalive
+  - nginx_http_upstream_keepalive
+  - nginx_http_upstream_keepalive_requests
+  - nginx_http_upstream_keepalive_timeout
+  - nginx_http_upstream_directives
+  - nginx_http_status_directives
+  - nginx_upstream_keepalive
+  - nginx_upstream_keepalive_requests
+  - nginx_upstream_keepalive_timeout
+  - client_max_body_size
+  - client_body_buffer_size
+  - cassandra_consistency
+  - router_update_frequency
+  - nginx_optimizations
+
 ### Fixes
 
 - Balancer caches are now reset on configuration reload.

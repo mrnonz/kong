@@ -67,8 +67,10 @@ do
     if err == "truncated" then
       log(WARN, "could not fetch all query string args for request, ",
                 "hash value may be empty/incomplete")
-    elseif err then
-      log(ERR, "failed fetching query string args: ", err)
+
+    elseif not query then
+      log(ERR, "failed fetching query string args: ", err or "unknown error")
+      return
     end
 
     local value = query[name]

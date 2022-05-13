@@ -330,10 +330,17 @@ for _, strategy in helpers.each_strategy() do
             })
           end)
 
-          it("when the arg has no explicit value", function()
+          it("when the arg has no value (boolean)", function()
             test_with_uri("/?hashme", "true", {
               hash_on = "query_arg",
               hash_on_query_arg = "hashme",
+            })
+          end)
+
+          it("when the arg has an empty value", function()
+            test_with_uri("/?foo=", "NONE", {
+              hash_on = "query_arg",
+              hash_on_query_arg = "foo",
             })
           end)
 
@@ -346,8 +353,25 @@ for _, strategy in helpers.each_strategy() do
             })
           end)
 
-          it("multi value", function()
-            test_with_uri("/?foo=first&foo=second", "first,second", {
+          it("multiple args are sorted and concatenated", function()
+            test_with_uri("/?foo=b&foo=a&foo=c", "a,b,c", {
+              hash_on = "query_arg",
+              hash_on_query_arg = "foo",
+            })
+          end)
+
+          it("multiple args of mixed type are handled", function()
+            -- interesting that `foo=` evaluates to an empty string here
+            -- whereas it evaluates to `nil` in the test case with only a
+            -- single arg
+            test_with_uri("/?foo=s&foo&foo=1&foo=", ",1,s,true", {
+              hash_on = "query_arg",
+              hash_on_query_arg = "foo",
+            })
+          end)
+
+          it("multiple boolean args are converted to strings", function()
+            test_with_uri("/?foo&foo&", "true,true", {
               hash_on = "query_arg",
               hash_on_query_arg = "foo",
             })

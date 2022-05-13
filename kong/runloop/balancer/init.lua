@@ -47,6 +47,7 @@ end
 
 local get_query_arg
 do
+  local sort = table.sort
   local get_uri_args = ngx.req.get_uri_args
   local limit = 100
   local cache
@@ -75,7 +76,16 @@ do
 
     local value = query[name]
 
+    -- normalization
+    --
+    -- 1. convert booleans to string
+    -- 2. sort and concat multi-value args
+
     if type(value) == "table" then
+      for i = 1, #value do
+        value[i] = tostring(value[i])
+      end
+      sort(value)
       value = table_concat(value, ",")
 
     elseif value ~= nil then

@@ -322,6 +322,13 @@ for _, strategy in helpers.each_strategy() do
             })
           end)
 
+          it("when the arg has no explicit value", function()
+            test_with_uri("/?hashme", "true", {
+              hash_on = "query_arg",
+              hash_on_query_arg = "hashme",
+            })
+          end)
+
           it("as a fallback", function()
             test_with_uri("/?fallback=123", "123", {
               hash_on = "query_arg",

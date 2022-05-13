@@ -72,8 +72,12 @@ do
     end
 
     local value = query[name]
+
     if type(value) == "table" then
       value = table_concat(value, ",")
+
+    elseif value ~= nil then
+      value = tostring(value)
     end
 
     return value

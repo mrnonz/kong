@@ -93,6 +93,7 @@ local function get_value_to_hash(upstream, ctx)
   local identifier
   local header_field_name = "hash_on_header"
   local query_arg_field_name = "hash_on_query_arg"
+  local uri_capture_name = "hash_on_uri_capture"
 
   for _ = 1,2 do
 
@@ -143,6 +144,13 @@ local function get_value_to_hash(upstream, ctx)
       local arg_name = upstream[query_arg_field_name]
       identifier = get_query_arg(arg_name)
 
+    elseif hash_on == "uri_capture" then
+      local captures = (ctx.router_matches or EMPTY_T).uri_captures
+      if captures then
+        local group = upstream[uri_capture_name]
+        identifier = captures[group]
+      end
+
     else
       log(ERR, "unknown hash_on value: ", hash_on)
     end
@@ -155,6 +163,8 @@ local function get_value_to_hash(upstream, ctx)
     hash_on = upstream.hash_fallback
     header_field_name = "hash_fallback_header"
     query_arg_field_name = "hash_fallback_query_arg"
+    uri_capture_name = "hash_fallback_uri_capture"
+
     if hash_on == "none" then
       return nil
     end

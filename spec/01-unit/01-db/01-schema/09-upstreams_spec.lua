@@ -192,6 +192,40 @@ describe("load upstreams", function()
     assert.not_nil(errs.hash_fallback_query_arg)
   end)
 
+  it("hash_on and hash_fallback must be different uri captures", function()
+    local ok, errs = validate({ hash_on = "uri_capture", hash_on_uri_capture = "same",
+                                hash_fallback = "uri_capture", hash_fallback_uri_capture = "same" })
+    assert.falsy(ok)
+    assert.not_nil(errs["@entity"])
+    assert.same(
+      {
+        "values of these fields must be distinct: 'hash_on_uri_capture', 'hash_fallback_uri_capture'"
+      },
+      errs["@entity"]
+    )
+  end)
+
+  it("hash_on_uri_capture and hash_fallback_uri_capture must not be empty strings", function()
+    local ok, errs = validate({
+      name = "test",
+      hash_on = "uri_capture",
+      hash_on_uri_capture = "",
+    })
+    assert.is_nil(ok)
+    assert.not_nil(errs.hash_on_uri_capture)
+
+    ok, errs = validate({
+      name = "test",
+      hash_on = "uri_capture",
+      hash_on_uri_capture = "ok",
+      hash_fallback = "uri_capture",
+      hash_fallback_uri_capture = "",
+    })
+    assert.is_nil(ok)
+    assert.not_nil(errs.hash_fallback_uri_capture)
+  end)
+
+
   it("produces defaults", function()
     local u = {
       name = "www.example.com",

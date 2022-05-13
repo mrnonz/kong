@@ -268,6 +268,45 @@ for _, strategy in helpers.each_strategy() do
           end)
         end)
 
+        describe("hashing on #uri_capture", function()
+          it("simple case", function()
+            test_with_uri("/foo/123", "foo", {
+              hash_on = "uri_capture",
+              hash_on_uri_capture = "namespace",
+            })
+
+            test_with_uri("/foo/123", "123", {
+              hash_on = "uri_capture",
+              hash_on_uri_capture = "id",
+            })
+          end)
+
+          it("missing", function()
+            test_with_uri("/", "NONE", {
+              hash_on = "uri_capture",
+              hash_on_uri_capture = "namespace",
+            })
+          end)
+
+          it("missing w/ fallback", function()
+            test_with_uri("/?test=1", "1", {
+              hash_on = "uri_capture",
+              hash_on_uri_capture = "namespace",
+              hash_fallback = "query_arg",
+              hash_fallback_query_arg = "test",
+            })
+          end)
+
+          it("as a fallback", function()
+            test_with_uri("/my-namespace/123?a=1&b=2", "my-namespace", {
+              hash_on = "query_arg",
+              hash_on_query_arg = "hashme",
+              hash_fallback = "uri_capture",
+              hash_fallback_uri_capture = "namespace",
+            })
+          end)
+        end)
+
         describe("hashing on a #query string arg", function()
           it("when the arg is present in the request", function()
             test_with_uri("/?hashme=123", "123", {

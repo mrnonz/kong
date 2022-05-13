@@ -327,6 +327,11 @@ do
     local sproto = opts.service_protocol or opts.route_protocol or "http"
     local rproto = opts.route_protocol or "http"
 
+    local rpaths = {
+      "/",
+      "/(?<namespace>[^/]+)/(?<id>[0-9]+)/?", -- uri capture hash value
+    }
+
     bp.services:insert({
       id = service_id,
       url = sproto .. "://" .. upstream_name .. ":" .. (rproto == "tcp" and 9100 or 80),
@@ -342,6 +347,7 @@ do
       protocols = { rproto },
       hosts = rproto ~= "tcp" and { route_host } or nil,
       destinations = (rproto == "tcp") and {{ port = 9100 }} or nil,
+      paths = rproto ~= "tcp" and rpaths or nil,
     })
 
     bp.plugins:insert({

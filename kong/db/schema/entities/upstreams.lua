@@ -79,7 +79,7 @@ local health_threshold = Schema.define {
   between = { 0, 100 },
 }
 
-local query_arg = Schema.define {
+local simple_param = Schema.define {
   type = "string",
   len_min = 1,
 }
@@ -190,10 +190,10 @@ local r =  {
     { hash_fallback_header = typedefs.header_name, },
     { hash_on_cookie = { type = "string",  custom_validator = utils.validate_cookie_name }, },
     { hash_on_cookie_path = typedefs.path{ default = "/", }, },
-    { hash_on_query_arg = query_arg },
-    { hash_fallback_query_arg = query_arg },
-    { hash_on_uri_capture = { type = "string", len_min = 1 }, },
-    { hash_fallback_uri_capture = { type = "string", len_min = 1 }, },
+    { hash_on_query_arg = simple_param },
+    { hash_fallback_query_arg = simple_param },
+    { hash_on_uri_capture = simple_param },
+    { hash_fallback_uri_capture = simple_param },
     { slots = { type = "integer", default = 10000, between = { 10, 2^16 }, }, },
     { healthchecks = { type = "record",
         default = healthchecks_defaults,

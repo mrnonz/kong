@@ -11,9 +11,11 @@ local certificate  = require "kong.runloop.certificate"
 local concurrency  = require "kong.concurrency"
 local workspaces   = require "kong.workspaces"
 local lrucache     = require "resty.lrucache"
+local hooks        = require "kong.hooks"
 
 
 local PluginsIterator = require "kong.runloop.plugins_iterator"
+local instrumentation = require "kong.tracing.instrumentation"
 
 
 local kong         = kong
@@ -40,6 +42,7 @@ local clear_header = ngx.req.clear_header
 local http_version = ngx.req.http_version
 local unpack       = unpack
 local escape       = require("kong.tools.uri").escape
+local run_hook     = hooks.run_hook
 
 
 local is_http_module   = subsystem == "http"
@@ -1255,6 +1258,7 @@ return {
     before = function(ctx)
       local server_port = var.server_port
       ctx.host_port = HOST_PORTS[server_port] or server_port
+      instrumentation.http_request()
     end,
     after = NOOP,
   },
@@ -1272,8 +1276,10 @@ return {
       ctx.request_uri = var.request_uri
 
       -- routing request
+      local hook_res = run_hook("runloop:access:router:pre", ctx)
       local router = get_updated_router()
       local match_t = router.exec(ctx)
+      run_hook("runloop:access:router:post", hook_res, match_t)
       if not match_t then
         return kong.response.exit(404, { message = "no Route matched with those values" })
       end
@@ -1642,8 +1648,12 @@ return {
     end
   },
   log = {
-    before = NOOP,
+    before = function(ctx)
+      instrumentation.runloop_log_before(ctx)
+    end,
     after = function(ctx)
+      instrumentation.runloop_log_after(ctx)
+
       update_lua_mem()
 
       if kong.configuration.anonymous_reports then

@@ -424,6 +424,10 @@ return function(options)
       end
 
       toip = client.toip
+
+      -- Patch DNS query instrumentation
+      local instrumentation = require "kong.tracing.instrumentation"
+      toip = instrumentation.patch_dns_query(toip)
     end
   end
 

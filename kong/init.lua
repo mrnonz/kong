@@ -86,6 +86,8 @@ local kong_error_handlers = require "kong.error_handlers"
 local migrations_utils = require "kong.cmd.utils.migrations"
 local plugin_servers = require "kong.runloop.plugin_servers"
 local lmdb_txn = require "resty.lmdb.transaction"
+local hooks = require "kong.hooks"
+local instrumentation = require "kong.tracing.instrumentation"
 
 local kong             = kong
 local ngx              = ngx
@@ -105,6 +107,7 @@ local ngx_DEBUG        = ngx.DEBUG
 local is_http_module   = ngx.config.subsystem == "http"
 local is_stream_module = ngx.config.subsystem == "stream"
 local start_time       = ngx.req.start_time
+local run_hook         = hooks.run_hook
 local type             = type
 local error            = error
 local ipairs           = ipairs
@@ -267,10 +270,15 @@ local function execute_access_plugins_iterator(plugins_iterator, ctx)
 
   for plugin, configuration in plugins_iterator:iterate("access", ctx) do
     if not ctx.delayed_response then
+      local span = run_hook("plugin:access:pre", plugin)
+
       setup_plugin_context(ctx, plugin)
 
       local co = coroutine.create(plugin.handler.access)
       local cok, cerr = coroutine.resume(co, plugin.handler, configuration)
+
+      run_hook("plugin:access:post", span, cok, cerr)
+
       if not cok then
         kong.log.err(cerr)
         ctx.delayed_response = {
@@ -293,9 +301,13 @@ end
 local function execute_plugins_iterator(plugins_iterator, phase, ctx)
   local old_ws = ctx.workspace
   for plugin, configuration in plugins_iterator:iterate(phase, ctx) do
+    local span = run_hook("plugin:" .. phase .. ":pre", plugin)
+
     setup_plugin_context(ctx, plugin)
     plugin.handler[phase](plugin.handler, configuration)
     reset_plugin_context(ctx, old_ws)
+
+    run_hook("plugin:" .. phase .. ":post", span)
   end
 end
 
@@ -476,8 +488,10 @@ function Kong.init()
   math.randomseed()
 
   kong_global.init_pdk(kong, config)
+  instrumentation.init(config)
 
   local db = assert(DB.new(config))
+  instrumentation.db_query(db.connector)
   assert(db:init_connector())
 
   schema_state = assert(db:schema_state())

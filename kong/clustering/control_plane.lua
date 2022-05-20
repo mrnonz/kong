@@ -24,6 +24,7 @@ local ngx_exit = ngx.exit
 local exiting = ngx.worker.exiting
 local ngx_time = ngx.time
 local ngx_now = ngx.now
+local ngx_update_time = ngx.update_time
 local ngx_var = ngx.var
 local table_insert = table.insert
 local table_remove = table.remove
@@ -56,6 +57,12 @@ local PONG_TYPE = "PONG"
 local RECONFIGURE_TYPE = "RECONFIGURE"
 local REMOVED_FIELDS = require("kong.clustering.compat.removed_fields")
 local _log_prefix = "[clustering] "
+
+
+local function handle_export_deflated_reconfigure_payload(self)
+  local ok, p_err, err = pcall(self.export_deflated_reconfigure_payload, self)
+  return ok, p_err or err
+end
 
 
 local function plugins_list_to_map(plugins_list)
@@ -242,6 +249,8 @@ end
 
 
 function _M:push_config()
+  local start = ngx_now()
+
   local payload, err = self:export_deflated_reconfigure_payload()
   if not payload then
     ngx_log(ngx_ERR, _log_prefix, "unable to export config from database: ", err)
@@ -255,7 +264,9 @@ function _M:push_config()
     n = n + 1
   end
 
-  ngx_log(ngx_DEBUG, _log_prefix, "config pushed to ", n, " clients")
+  ngx_update_time()
+  local duration = ngx_now() - start
+  ngx_log(ngx_DEBUG, _log_prefix, "config pushed to ", n, " data-plane nodes in " .. duration .. " seconds")
 end
 
 
@@ -481,7 +492,7 @@ function _M:handle_cp_websocket()
   self.clients[wb] = queue
 
   if not self.deflated_reconfigure_payload then
-    _, err = self:export_deflated_reconfigure_payload()
+    _, err = handle_export_deflated_reconfigure_payload(self)
   end
 
   if self.deflated_reconfigure_payload then
@@ -654,8 +665,8 @@ local function push_config_loop(premature, self, push_config_semaphore, delay)
     return
   end
 
-  local _, err = self:export_deflated_reconfigure_payload()
-  if err then
+  local ok, err = handle_export_deflated_reconfigure_payload(self)
+  if not ok then
     ngx_log(ngx_ERR, _log_prefix, "unable to export initial config from database: ", err)
   end
 

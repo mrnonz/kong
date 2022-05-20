@@ -33,7 +33,8 @@ fi
 if [ "$TEST_SUITE" == "integration" ]; then
     if [[ "$TEST_SPLIT" == first* ]]; then
         # GitHub Actions, run first batch of integration tests
-        eval "$TEST_CMD" $(ls -d spec/02-integration/* | head -n4)
+        #eval "$TEST_CMD" $(ls -d spec/02-integration/* | head -n4)
+        KONG_TEST_DONT_CLEAN=1 bin/busted spec/02-integration/02-cmd/03-reload_spec.lua
         cat servroot/logs/error.log
 
     elif [[ "$TEST_SPLIT" == second* ]]; then

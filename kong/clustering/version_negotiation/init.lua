@@ -356,7 +356,7 @@ end
 
 --- detect '/v1/wrpc' endpoint
 --- if there is no '/v1/wrpc', fallback to websocket + json
-function _M.head_request_version(conf, cert, cert_key)
+function _M.check_wrpc_support(conf, cert, cert_key)
   local params = {
     scheme = "https",
     method = "HEAD",
@@ -384,7 +384,7 @@ function _M.head_request_version(conf, cert, cert_key)
   end
 
   if res.status == 404 then
-    return "v0", "no wrpc endpoint, fallback to /v1/outlet"
+    return "v0"
   end
 
   return "v1"   -- wrpc

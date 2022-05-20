@@ -13,7 +13,6 @@ local function get_kong_workers()
       method = "GET",
       path = "/",
     }
-    print("res = ".. require("inspect")(res))
     if not res or res.status ~= 200 then
       return false
     end
